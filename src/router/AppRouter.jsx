@@ -15,17 +15,8 @@ const AppRouter = () => {
           {/* Public route */}
           <Route path="/login" element={<Login />} />
           
-          {/* Protected routes */}
-          <Route
-            path="/aset"
-            element={
-              <PrivateRoute>
-                <AsetList />
-              </PrivateRoute>
-            }
-          />
-          
-          {/* ← TAMBAHKAN ROUTE INI */}
+  
+  
           <Route
             path="/pengajuan"
             element={
@@ -36,8 +27,7 @@ const AppRouter = () => {
           />
           
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/aset" replace />} />
-          <Route path="*" element={<Navigate to="/aset" replace />} />
+         <Route path="/" element={<Navigate to="/pengajuan" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

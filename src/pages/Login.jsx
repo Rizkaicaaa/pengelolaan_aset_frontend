@@ -15,7 +15,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/aset', { replace: true });
+      navigate('/pengajuan', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 

@@ -21,7 +21,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-md fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
 
@@ -42,17 +42,22 @@ const Navbar = () => {
 
             {/* Navigation Links */}
             <div className="hidden md:flex space-x-1">
-              <Link
-                to="/aset"
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  isActive('/aset')
-                    ? 'bg-blue-100 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                {/* Manajemen Aset (DISABLED) */}
+              <span
+                className="px-4 py-2 rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed"
+                title="Modul belum diaktifkan"
               >
-                Data Aset
-              </Link>
-              
+                Manajemen Aset
+              </span>
+
+              {/* Peminjaman Aset (DISABLED) */}
+              <span
+                className="px-4 py-2 rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed"
+                title="Modul belum diaktifkan"
+              >
+                Peminjaman Aset
+              </span>
+
               <Link
                 to="/pengajuan"
                 className={`px-4 py-2 rounded-lg transition-colors ${

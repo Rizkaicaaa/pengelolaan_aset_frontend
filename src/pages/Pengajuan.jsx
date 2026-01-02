@@ -496,8 +496,7 @@ const ProcurementRequestPage = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8 text-center lg:text-left">
-          <h1 className="text-3xl font-bold text-gray-900">Pengajuan Aset</h1>
+        <div className="mb-14 text-center lg:text-left">
         </div>
 
         {/* Main Card */}
