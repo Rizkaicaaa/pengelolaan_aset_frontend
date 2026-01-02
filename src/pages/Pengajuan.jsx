@@ -328,7 +328,6 @@ const ProcurementRequestPage = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -348,53 +347,33 @@ const ProcurementRequestPage = () => {
       setProcurements(response.data || []);
     } catch (err) {
       setError('Gagal memuat data pengajuan');
-      console.error('Error loading procurements:', err);
       setProcurements([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearchClick = () => {
+  const handleSearch = () => loadProcurements(searchTerm);
+
+  const handleCreate = async (formData) => {
+    await pengajuanService.create(formData);
     loadProcurements(searchTerm);
   };
 
-  const handleCreate = async (formData) => {
-    try {
-      await pengajuanService.create(formData);
-      loadProcurements(searchTerm);
-    } catch (error) {
-      throw new Error(error.message || 'Gagal membuat pengajuan');
-    }
-  };
-
   const handleUpdate = async (formData) => {
-    try {
-      await pengajuanService.update(selectedProcurement.id, formData);
-      loadProcurements(searchTerm);
-    } catch (error) {
-      throw new Error(error.message || 'Gagal memperbarui pengajuan');
-    }
+    await pengajuanService.update(selectedProcurement.id, formData);
+    loadProcurements(searchTerm);
   };
 
   const handleUpdateStatus = async (statusData) => {
-    try {
-      await pengajuanService.updateStatus(selectedProcurement.id, statusData);
-      loadProcurements(searchTerm);
-    } catch (error) {
-      throw new Error(error.message || 'Gagal memperbarui status');
-    }
+    await pengajuanService.updateStatus(selectedProcurement.id, statusData);
+    loadProcurements(searchTerm);
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Yakin ingin menghapus pengajuan ini?')) {
-      try {
-        await pengajuanService.delete(id);
-        loadProcurements(searchTerm);
-      } catch (err) {
-        alert('Terjadi kesalahan saat menghapus pengajuan');
-        console.error('Error deleting procurement:', err);
-      }
+      await pengajuanService.delete(id);
+      loadProcurements(searchTerm);
     }
   };
 
@@ -420,218 +399,158 @@ const ProcurementRequestPage = () => {
     setShowDetailModal(true);
   };
 
-  const canEdit = (procurement) => {
-    return procurement.requestStatus === 'pending' && 
-           ['dosen', 'admin_lab'].includes(user?.role);
-  };
-
-  const canDelete = (procurement) => {
-    return procurement.requestStatus === 'pending' && 
-           ['dosen', 'admin_lab'].includes(user?.role);
-  };
-
-  const canUpdateStatus = (procurement) => {
-    return procurement.requestStatus === 'pending' && user?.role === 'admin_jurusan';
-  };
+  const canEdit = (p) => p.requestStatus === 'pending' && ['dosen', 'admin_lab'].includes(user?.role);
+  const canDelete = (p) => p.requestStatus === 'pending' && ['dosen', 'admin_lab'].includes(user?.role);
+  const canUpdateStatus = (p) => p.requestStatus === 'pending' && user?.role === 'admin_jurusan';
 
   const getStatusBadge = (status) => {
     const config = {
-      pending: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
-      approved: { label: 'Disetujui', class: 'bg-green-100 text-green-800' },
-      rejected: { label: 'Ditolak', class: 'bg-red-100 text-red-800' }
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800'
     };
-    const s = config[status] || config.pending;
+    const label = { pending: 'Pending', approved: 'Disetujui', rejected: 'Ditolak' };
     return (
-      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${s.class}`}>
-        {s.label}
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${config[status] || config.pending}`}>
+        {label[status] || 'Pending'}
       </span>
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Memuat data pengajuan...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Pengajuan Aset</h2>
-              <p className="text-gray-600 mt-1">Kelola pengajuan pengadaan aset</p>
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8 text-center lg:text-left">
+          <h1 className="text-3xl font-bold text-gray-900">Pengajuan Aset</h1>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Card Header dengan gradient */}
+          <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 lg:px-8 lg:py-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Daftar Pengajuan</h2>
+                <p className="text-blue-100 text-sm mt-1">Pantau dan kelola semua pengajuan aset</p>
+              </div>
+              {['dosen', 'admin_lab'].includes(user?.role) && (
+                <button
+                  onClick={openCreateModal}
+                  className="bg-white text-blue-900 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Buat Pengajuan
+                </button>
+              )}
             </div>
-            {['dosen', 'admin_lab'].includes(user?.role) && (
-              <button
-                onClick={openCreateModal}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Buat Pengajuan
-              </button>
-            )}
           </div>
 
           {/* Search Bar */}
-          <div className="mb-6">
-            <div className="flex gap-2">
+          <div className="p-6 lg:p-8 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
                   type="text"
-                  placeholder="Cari data pengajuan aset"
+                  placeholder="Cari nama aset, kategori, atau pengaju..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchClick()}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none"
                 />
               </div>
               <button
-                onClick={handleSearchClick}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                onClick={handleSearch}
+                className="px-8 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors"
               >
                 Cari
               </button>
             </div>
           </div>
 
-          {/* Error Alert */}
+          {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
+            <div className="mx-6 lg:mx-8 mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="p-16 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Memuat data pengajuan...</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && procurements.length === 0 && (
+            <div className="p-16 text-center">
+              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Belum ada pengajuan</h3>
+              <p className="mt-2 text-gray-500">Mulai dengan membuat pengajuan aset baru.</p>
+              {['dosen', 'admin_lab'].includes(user?.role) && (
+                <button
+                  onClick={openCreateModal}
+                  className="mt-6 inline-flex items-center px-6 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Buat Pengajuan
+                </button>
+              )}
             </div>
           )}
 
           {/* Table */}
-          {procurements.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada pengajuan</h3>
-              <p className="mt-1 text-sm text-gray-500">Mulai dengan membuat pengajuan baru.</p>
-              {['dosen', 'admin_lab'].includes(user?.role) && (
-                <div className="mt-6">
-                  <button
-                    onClick={openCreateModal}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Buat Pengajuan
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
+          {!loading && procurements.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nama Aset
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Jumlah
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kategori
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pengaju
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Aksi
-                    </th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama Aset</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jumlah</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kategori</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pengaju</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {procurements.map((procurement) => (
-                    <tr key={procurement.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{procurement.assetName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{procurement.quantity}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 capitalize">{procurement.category}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{procurement.user?.name || '-'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(procurement.requestStatus)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => openDetailModal(procurement)}
-                          className="text-blue-600 hover:text-blue-900 mr-4 inline-flex items-center"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
+                <tbody className="divide-y divide-gray-200">
+                  {procurements.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 lg:px-8 py-5 text-sm font-medium text-gray-900">{p.assetName}</td>
+                      <td className="px-6 lg:px-8 py-5 text-sm text-gray-700">{p.quantity}</td>
+                      <td className="px-6 lg:px-8 py-5 text-sm text-gray-700 capitalize">{p.category}</td>
+                      <td className="px-6 lg:px-8 py-5 text-sm text-gray-700">{p.user?.name || '-'}</td>
+                      <td className="px-6 lg:px-8 py-5">{getStatusBadge(p.requestStatus)}</td>
+                      <td className="px-6 lg:px-8 py-5 text-sm space-x-3">
+                        <button onClick={() => openDetailModal(p)} className="text-blue-600 hover:text-blue-800">
+                          <Eye className="w-5 h-5" />
                         </button>
-                        
-                        {canUpdateStatus(procurement) && (
-                          <button
-                            onClick={() => openStatusModal(procurement)}
-                            className="text-green-600 hover:text-green-900 mr-4 inline-flex items-center"
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {canUpdateStatus(p) && (
+                          <button onClick={() => openStatusModal(p)} className="text-green-600 hover:text-green-800">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </button>
                         )}
-
-                        {canEdit(procurement) && (
-                          <button
-                            onClick={() => openEditModal(procurement)}
-                            className="text-blue-600 hover:text-blue-900 mr-4 inline-flex items-center"
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {canEdit(p) && (
+                          <button onClick={() => openEditModal(p)} className="text-blue-600 hover:text-blue-800">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
                         )}
-
-                        {canDelete(procurement) && (
-                          <button
-                            onClick={() => handleDelete(procurement.id)}
-                            className="text-red-600 hover:text-red-900 inline-flex items-center"
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {canDelete(p) && (
+                          <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
@@ -646,7 +565,7 @@ const ProcurementRequestPage = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals - tetap sama */}
       <ProcurementFormModal
         isOpen={showFormModal}
         onClose={() => setShowFormModal(false)}
