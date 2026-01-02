@@ -3,6 +3,7 @@ import { Search, Plus, Edit2, Trash2, Eye, CheckCircle, XCircle, FileText } from
 import { useAuth } from '../context/AuthContext';
 import pengajuanService from '../services/pengajuanService';
 import Navbar from '../components/Navbar';
+import UnsplashModal from '../components/UnsplashModal'; 
 
 // Modal Component
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
@@ -36,8 +37,11 @@ const ProcurementFormModal = ({ isOpen, onClose, onSubmit, initialData = null, m
     assetName: '',
     quantity: 1,
     category: 'electronics',
-    reason: ''
+    reason: '',
+    image_reference: '' 
   });
+  
+  const [showUnsplashModal, setShowUnsplashModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -47,18 +51,26 @@ const ProcurementFormModal = ({ isOpen, onClose, onSubmit, initialData = null, m
         assetName: initialData.assetName || '',
         quantity: initialData.quantity || 1,
         category: initialData.category || 'electronics',
-        reason: initialData.reason || ''
+        reason: initialData.reason || '',
+        image_reference: initialData.image_reference || '' // <--- Load gambar jika sedang Edit
       });
     } else {
       setFormData({
         assetName: '',
         quantity: 1,
         category: 'electronics',
-        reason: ''
+        reason: '',
+        image_reference: '' 
       });
     }
     setErrors({});
   }, [initialData, isOpen]);
+
+
+  const handleSelectImage = (url) => {
+    setFormData({ ...formData, image_reference: url });
+    setShowUnsplashModal(false);
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -75,6 +87,7 @@ const ProcurementFormModal = ({ isOpen, onClose, onSubmit, initialData = null, m
   };
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={mode === 'create' ? 'Buat Pengajuan Baru' : 'Edit Pengajuan'}>
       <div className="space-y-4">
         {errors.general && (
@@ -94,6 +107,46 @@ const ProcurementFormModal = ({ isOpen, onClose, onSubmit, initialData = null, m
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Foto Referensi (Opsional)
+            </label>
+            <div className="flex gap-2 mb-2">
+              <input 
+                type="text" 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
+                value={formData.image_reference}
+                readOnly 
+                placeholder="URL gambar..."
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowUnsplashModal(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 whitespace-nowrap text-sm font-medium flex items-center gap-2"
+              >
+                <Search size={16} /> Cari Foto
+              </button>
+            </div>
+
+            {/* Preview Gambar */}
+            {formData.image_reference && (
+              <div className="mt-2 relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                <img 
+                  src={formData.image_reference} 
+                  alt="Preview Aset" 
+                  className="w-full h-full object-cover" 
+                />
+                <button 
+                  type="button"
+                  onClick={() => setFormData({ ...formData, image_reference: '' })}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+            )}
+          </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -153,6 +206,14 @@ const ProcurementFormModal = ({ isOpen, onClose, onSubmit, initialData = null, m
         </div>
       </div>
     </Modal>
+    {/* 4. Render Modal Unsplash akan muncul menumpuk di atas modal form) */}
+      {showUnsplashModal && (
+        <UnsplashModal 
+          onClose={() => setShowUnsplashModal(false)} 
+          onSelectImage={handleSelectImage} 
+        />
+      )}
+    </>
   );
 };
 
@@ -264,6 +325,18 @@ const DetailModal = ({ isOpen, onClose, procurement }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detail Pengajuan" size="lg">
       <div className="space-y-4">
+        {procurement.image_reference && (
+          <div className="mb-4">
+            <label className="text-sm font-medium text-gray-500 block mb-1">Foto Referensi</label>
+            <div className="h-48 w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+              <img 
+                src={procurement.image_reference} 
+                alt={procurement.assetName} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Nama Aset</label>
@@ -519,7 +592,9 @@ const ProcurementRequestPage = () => {
                     <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kategori</th>
                     <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pengaju</th>
                     <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Gambar</th>
                     <th className="px-6 lg:px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -530,6 +605,17 @@ const ProcurementRequestPage = () => {
                       <td className="px-6 lg:px-8 py-5 text-sm text-gray-700 capitalize">{p.category}</td>
                       <td className="px-6 lg:px-8 py-5 text-sm text-gray-700">{p.user?.name || '-'}</td>
                       <td className="px-6 lg:px-8 py-5">{getStatusBadge(p.requestStatus)}</td>
+                      <td className="px-6 lg:px-8 py-5">{p.image_reference ? (
+                          <div className="h-12 w-16 flex-shrink-0"><img 
+                            src={p.image_reference} 
+                            alt={p.assetName} 
+                            className="h-full w-full object-cover rounded border border-gray-200 shadow-sm"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs italic bg-gray-100 px-2 py-1 rounded">No Image</span>
+                      )}
+                      </td>
                       <td className="px-6 lg:px-8 py-5 text-sm space-x-3">
                         <button onClick={() => openDetailModal(p)} className="text-blue-600 hover:text-blue-800">
                           <Eye className="w-5 h-5" />

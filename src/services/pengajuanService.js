@@ -43,6 +43,7 @@ const pengajuanService = {
         quantity: data.quantity,
         category: data.category,
         reason: data.reason,
+        image_reference: data.image_reference
       };
 
       const response = await api.post('/procurement-requests', payload);
@@ -63,6 +64,7 @@ const pengajuanService = {
         quantity: data.quantity,
         category: data.category,
         reason: data.reason,
+        image_reference: data.image_reference
       };
 
       const response = await api.put(`/procurement-requests/${id}`, payload);
